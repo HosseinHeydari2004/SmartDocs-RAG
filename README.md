@@ -1,238 +1,165 @@
-# SmartDocs-RAG
+<div align="center">
 
-**A metadata-aware Retrieval-Augmented Generation (RAG) system for exploring medical and research documents.**
+# 📚 SmartDocs-RAG
 
-SmartDocs-RAG is a learning project focused on building a practical document-question-answering pipeline. It ingests documents, extracts and cleans their text, enriches chunks with metadata, stores embeddings in ChromaDB, and answers questions using retrieved passages with inline source references.
+### Metadata-aware Retrieval-Augmented Generation for intelligent document search and source-grounded question answering
 
-The project explores two important RAG concepts:
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C)](https://www.langchain.com/)
+[![ChromaDB](https://img.shields.io/badge/Vector%20DB-ChromaDB-FF6F00)](https://www.trychroma.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-- **Semantic chunking** — splitting documents around semantic changes rather than relying only on a fixed character count.
-- **Metadata filtering** — narrowing retrieval using document attributes such as author, publication year, document type, language, or filename.
+</div>
 
-> **Project status:** Educational / experimental. It is not a validated medical decision-support system and should not be used to make clinical decisions.
+---
 
-## Key features
+## ✨ Overview
 
-- Upload digital documents such as PDF, DOCX, TXT, Markdown, and CSV.
-- Process scanned PDFs and images using Tesseract OCR (optional system dependency).
-- Clean extracted text before indexing.
-- Extract document metadata with an LLM when configured.
-- Split text using semantic chunking.
-- Generate embeddings and store chunks in ChromaDB.
-- Extract metadata constraints from a user's question and validate them before querying the vector store.
-- Combine automatic metadata filters with manually selected filters.
-- Generate answers grounded in retrieved passages and include inline citations such as `[1]`.
-- Return an explicit “no sufficient evidence found” response when retrieval returns no matching passages.
-- Expose a FastAPI backend and Streamlit interface.
-- Track ingestion jobs and expose job status, progress, and cancellation endpoints.
+**SmartDocs-RAG** lets you upload your own documents and ask questions about them in natural language. Instead of relying only on vector similarity, it attaches **metadata** to every chunk, so retrieval can be **filtered** (by document, type, source, and more) before the LLM generates an answer. Every answer is **grounded in the retrieved sources**, so you can see where the information came from.
 
-## How it works
+It ships as a complete, deployable system: a **FastAPI** backend, a **Streamlit** interface, a persistent **ChromaDB** vector store, and a **Docker** image with OCR support.
 
-```text
-                 ┌─────────────────────┐
-                 │    Streamlit UI     │
-                 └──────────┬──────────┘
-                            │ HTTP
-                 ┌──────────▼──────────┐
-                 │      FastAPI        │
-                 └──────────┬──────────┘
-                            │
-             ┌──────────────▼──────────────┐
-             │       Ingestion pipeline    │
-             │ Validate → Extract / OCR    │
-             │ → Clean → Metadata          │
-             │ → Semantic chunks           │
-             │ → Embeddings → ChromaDB     │
-             └─────────────────────────────┘
+## 🎯 Key Features
 
-Question → Extract metadata filters → Validate filters
-         → Filtered vector retrieval → LLM answer + sources
+| | Feature | Details |
+|---|---|---|
+| 🔎 | **Metadata-aware retrieval** | Chunks carry metadata, enabling filtered search instead of blind top-k similarity |
+| 🧾 | **Source-grounded answers** | Responses are generated from retrieved context so they can be traced back to documents |
+| 📄 | **Multi-format ingestion** | PDF, Word (`.docx`), Markdown, and other formats through `unstructured` |
+| 👁️ | **OCR for scanned documents** | Tesseract + Poppler, with **English and Persian** language packs included |
+| 🧠 | **Local embeddings** | Hugging Face `sentence-transformers` models; no embedding API required |
+| 🗄️ | **Persistent vector store** | ChromaDB index stored on a mounted volume, so it survives restarts |
+| 🌐 | **REST API + Web UI** | FastAPI service with a health endpoint, plus a Streamlit front end |
+| 🐳 | **Production-minded Docker image** | Non-root user, healthcheck, CPU-only PyTorch by default, optional GPU build |
+
+## 🏗️ How It Works
+
+```mermaid
+flowchart LR
+    A[Documents<br/>PDF · DOCX · MD · scans] --> B[Parsing & OCR]
+    B --> C[Chunking +<br/>metadata enrichment]
+    C --> D[Embeddings<br/>sentence-transformers]
+    D --> E[(ChromaDB<br/>vector store)]
+    Q[User question] --> F[Metadata filter +<br/>similarity search]
+    E --> F
+    F --> G[LLM answer generation]
+    G --> H[Answer + cited sources]
 ```
 
-### 1. Document ingestion
+1. **Ingest**: documents are parsed (with OCR fallback for scanned pages) and split into chunks.
+2. **Enrich**: each chunk is stored with metadata describing where it came from.
+3. **Embed & index**: chunks are embedded with a Hugging Face model and stored in ChromaDB.
+4. **Retrieve**: a question is combined with optional metadata filters to fetch the most relevant chunks.
+5. **Generate**: the LLM answers using only the retrieved context and returns the supporting sources.
 
-The ingestion pipeline validates each file, extracts text (or uses OCR for scanned inputs), cleans the extracted content, attempts metadata extraction, creates semantic chunks, generates embeddings, and stores the resulting chunks in ChromaDB.
+## 🧰 Tech Stack
 
-Each chunk can carry metadata such as:
+- **Language:** Python 3.11
+- **RAG framework:** LangChain (`langchain`, `langchain-community`, `langchain-text-splitters`)
+- **Embeddings:** Hugging Face via `langchain-huggingface` and `sentence-transformers`
+- **Vector database:** ChromaDB (`langchain-chroma`, `chromadb`)
+- **Document processing:** PyMuPDF, pdfminer.six, `unstructured`, `python-docx`, `docx2txt`, Markdown
+- **OCR:** Tesseract (`pytesseract`), `pdf2image`, Pillow
+- **Backend:** FastAPI + Uvicorn, Pydantic v2
+- **Frontend:** Streamlit
+- **Deployment:** Docker
 
-- `filename` and `doc_id`
-- `page_number` and document `kind`
-- `title`, `author`, `year`
-- `document_type` and `language`
-- `ingested_at`
+## 🚀 Getting Started
 
-If metadata extraction fails, ingestion can continue with a warning rather than discarding the document.
-
-### 2. Semantic chunking
-
-The project uses LangChain's `SemanticChunker` with an embedding model to identify semantic breakpoints. This is intended to keep related ideas together more naturally than splitting text only at fixed character intervals.
-
-Chunk quality depends on the source document, embedding model, and chunking configuration. Semantic chunking is not automatically better for every dataset, so its impact should be measured against a baseline.
-
-### 3. Metadata-aware retrieval
-
-When automatic filtering is enabled, the system attempts to identify constraints explicitly stated in the user's question. Supported fields include:
-
-- Filename
-- Author
-- Document type
-- Language
-- Exact publication year, year range, or a list of years
-
-The extracted filter is validated with Pydantic and translated into supported ChromaDB conditions. Manually selected filters take precedence for fields the user explicitly sets.
-
-If filtering returns no matching passages, the system reports that it could not find sufficient evidence instead of silently removing the constraints and guessing.
-
-### 4. Grounded answers and sources
-
-Retrieved passages are passed to the language model as context. The model is instructed to answer using that context, cite passages inline, and say when the available documents do not contain enough evidence. The API also returns source metadata and retrieval information.
-
-Citations help trace an answer back to retrieved material, but they do not guarantee that the answer is correct. Always verify important claims against the original documents.
-
-## Tech stack
-
-- **Language:** Python
-- **API:** FastAPI, Uvicorn
-- **UI:** Streamlit
-- **RAG orchestration:** LangChain
-- **Chunking:** LangChain SemanticChunker
-- **Embeddings:** Sentence Transformers (`BAAI/bge-small-en-v1.5` by default)
-- **Vector store:** ChromaDB
-- **LLM provider:** OpenRouter
-- **Metadata validation:** Pydantic
-- **OCR:** Tesseract, PyTesseract, Pillow, and pdf2image
-
-The default embedding model is English-focused. For Persian or multilingual corpora, configure a suitable multilingual embedding model and re-index the collection.
-
-## Getting started
-
-### Requirements
-
-- Python 3.10+ (use a Python version supported by the installed dependencies)
-- An OpenRouter API key for LLM-powered metadata extraction and answer generation
-- Tesseract OCR and Poppler only if you need scanned-PDF/image OCR
-
-### 1. Clone the repository
+### Option 1: Docker (recommended)
 
 ```bash
-git clone https://github.com/HosseinHeydari2004/MedEvidence-RAG.git
-cd MedEvidence-RAG
+git clone https://github.com/HosseinHeydari2004/SmartDocs-RAG.git
+cd SmartDocs-RAG
+
+# Build (CPU-only PyTorch by default, smaller image)
+docker build -t smartdocs-rag .
+
+# Run the API (port 8000); /data persists the vector index and model cache
+docker run -p 8000:8000 -v smartdocs-data:/data smartdocs-rag
 ```
 
-If your repository URL differs, replace the URL above with the correct one.
+Run the Streamlit UI from the same image:
 
-### 2. Create and activate a virtual environment
+```bash
+docker run -p 8501:8501 -v smartdocs-data:/data \
+  -e SMARTDOCS_API_URL=http://host.docker.internal:8000 \
+  smartdocs-rag streamlit run ui/app.py --server.address 0.0.0.0 --server.port 8501
+```
 
-**Windows PowerShell**
+**GPU build:**
 
-```powershell
+```bash
+docker build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu121 -t smartdocs-rag:gpu .
+```
+
+### Option 2: Local setup
+
+Requires Python 3.11, [Tesseract](https://github.com/tesseract-ocr/tesseract) (with the `eng` and `fas` language data) and [Poppler](https://poppler.freedesktop.org/) for OCR.
+
+```bash
+git clone https://github.com/HosseinHeydari2004/SmartDocs-RAG.git
+cd SmartDocs-RAG
+
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-**Linux / macOS**
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-python -m pip install --upgrade pip
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
 
-### 4. Configure the LLM provider
+# Start the API
+uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 
-Create a `.env` file in the project root and add your key:
-
-```env
-OPENROUTER_API_KEY=your_openrouter_api_key
-OPENROUTER_MODEL=openrouter/auto
-```
-
-Never commit API keys or other secrets to version control.
-
-### 5. Run the application
-
-Start the Streamlit interface:
-
-```bash
+# In a second terminal, start the UI
 streamlit run ui/app.py
 ```
 
-By default, the UI can start the local FastAPI backend automatically if it is not already running. The interface is available at `http://localhost:8501`, and the API documentation is available at `http://localhost:8000/docs`.
+Then open:
 
-To run the API separately, disable UI auto-start and launch it in another terminal:
+- **Web UI:** http://localhost:8501
+- **API docs (Swagger):** http://localhost:8000/docs
+- **Health check:** http://localhost:8000/health
 
-```bash
-# Set SMARTDOCS_AUTOSTART_API=0 in your environment
-uvicorn src.api.main:app --workers 1
-```
+## ⚙️ Configuration
 
-Use one API worker because job state and session-supplied settings are held in process memory.
-
-> **Note:** The repository's current UI/API configuration uses some `SmartDocs` naming (for example, `SMARTDOCS_AUTOSTART_API`). Keep those settings unchanged unless you update the code and configuration together.
-
-## API overview
-
-The API uses the `/api/v1` prefix for application endpoints.
-
-| Method | Endpoint | Purpose |
+| Variable | Default (Docker) | Description |
 |---|---|---|
-| `GET` | `/health` | Basic health check |
-| `GET` | `/stats` | Vector-store and embedding statistics |
-| `POST` | `/documents/upload` | Upload digital documents |
-| `POST` | `/documents/upload-scanned` | Upload scanned documents for OCR |
-| `GET` | `/jobs/{id}` | Check ingestion job status |
-| `POST` | `/jobs/{id}/cancel` | Request cancellation of an ingestion job |
-| `GET` | `/documents` | List indexed documents |
-| `DELETE` | `/documents/{doc_id}` | Delete an indexed document |
-| `POST` | `/chat` | Ask a question over indexed documents |
-| `GET` | `/settings/status` | Inspect runtime settings status |
+| `VECTORDB_PATH` | `/data/vectordb` | Where the ChromaDB index is stored |
+| `HF_HOME` | `/data/hf` | Hugging Face model cache |
+| `SMARTDOCS_API_URL` | `http://localhost:8000` | API address used by the Streamlit UI |
 
-Interactive API documentation is available at `/docs` when the backend is running.
+Settings can also be provided through a `.env` file (loaded with `python-dotenv`).
 
-## Testing
+> **Note:** the API runs with a **single worker** by design, because job state and the session API key are held in process memory.
 
-Run the test suite from the repository root:
+## 🗂️ Project Structure
 
-```bash
-pytest
+```
+SmartDocs-RAG/
+├── src/                # Application code (API, ingestion, retrieval)
+│   └── api/main.py     # FastAPI entry point
+├── ui/                 # Streamlit interface
+├── Dockerfile          # Production-style image (non-root, healthcheck)
+├── requirements.txt    # Python dependencies
+└── README.md
 ```
 
-The repository README reports 96 tests covering API behavior, ingestion, OCR-related behavior, metadata filters, RAG behavior, UI pages, and backend auto-start. Test availability and results may depend on the local environment and installed optional OCR tools.
+## 🤝 Contributing
 
-## Current limitations
+Issues and pull requests are welcome. For larger changes, please open an issue first to discuss what you would like to change.
 
-- The project has not been clinically validated and is not intended for diagnosis or treatment decisions.
-- The default embedding model is English-focused; multilingual corpora need a suitable model and re-indexing.
-- OCR extracts text but does not reliably preserve tables, formulas, charts, or complex layouts.
-- OCR requires external Tesseract/Poppler installations and the relevant language packs.
-- The API has no built-in authentication; do not expose it publicly without adding appropriate security controls.
-- Job state and session-provided API settings are stored in memory and are lost when the process restarts.
-- Retrieval quality, latency, cost, and answer faithfulness should be evaluated on a representative dataset before making performance claims.
+## 👤 Author
 
-## Learning goals and next steps
+**Hossein Heydari**, Computer Engineering student, Co-Founder & Technical Lead at [AI Builders Iran](https://github.com/AI-Builders-Iran), an open-source organization building production-grade Computer Vision, LLM, RAG, and AI Agent systems.
 
-This project is part of my hands-on journey into RAG engineering. The current focus is on understanding how ingestion, semantic chunking, metadata extraction, metadata filtering, vector retrieval, and grounded generation work together.
+- 💼 LinkedIn: [hossein-heydari2004](https://www.linkedin.com/in/hossein-heydari2004)
+- 🐙 GitHub: [@HosseinHeydari2004](https://github.com/HosseinHeydari2004)
+- ✉️ Email: hosseinheydari982020@gmail.com
 
-Possible next experiments:
+---
 
-1. Compare semantic chunking with fixed-size and recursive character chunking.
-2. Evaluate retrieval with Recall@k, Precision@k, and MRR on a curated question-answer set.
-3. Evaluate generated answers for faithfulness and answer relevance.
-4. Compare embedding models, chunk sizes, and retrieval settings.
-5. Add hybrid retrieval and reranking, then measure whether they improve results.
+<div align="center">
 
-## Disclaimer
+⭐ If you find this project useful, consider giving it a star!
 
-MedEvidence-RAG is an educational software project. It may retrieve incomplete, outdated, or irrelevant information and may generate incorrect answers. It is not a substitute for professional medical judgment.
-
-## Author
-
-**Hossein Heydari**
-
-- GitHub: [HosseinHeydari2004](https://github.com/HosseinHeydari2004)
+</div>
