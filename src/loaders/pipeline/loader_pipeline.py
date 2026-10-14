@@ -28,7 +28,7 @@ class DocumentLoaderPipeline(BasePipelineLoader):
     interface for loading documents from a given path. It automatically detects
     whether the given path is a file, a directory, or a ZIP archive, and routes
     the loading process accordingly. Supported file extensions include
-    ``.docs``, ``.pdf``, ``.txt``, ``.md``, and ``.csv``.
+    ``.docx``, ``.pdf``, ``.txt``, ``.md``, ``.markdown`` and ``.csv``.
 
     Attributes
     ----------
@@ -37,7 +37,7 @@ class DocumentLoaderPipeline(BasePipelineLoader):
         dot) to their corresponding loader classes. Initialized with the
         following entries:
 
-        - ``".docs"`` -> ``DocsLoader``
+        - ``".docx"`` -> ``DocsLoader``
         - ``".pdf"``  -> ``PDFLoader``
         - ``".txt"``  -> ``TxtLoader``
         - ``".md"``   -> ``MarkdownLoader``
@@ -75,10 +75,11 @@ class DocumentLoaderPipeline(BasePipelineLoader):
         supported file extensions and their corresponding loader classes.
         """
         self._loaders: dict[str, type[BaseLoader]] = {
-            ".docs": DocsLoader,
+            ".docx": DocsLoader,
             ".pdf": PDFLoader,
             ".txt": TxtLoader,
             ".md": MarkdownLoader,
+            ".markdown": MarkdownLoader,
             ".csv": CsvLoader,
         }
 

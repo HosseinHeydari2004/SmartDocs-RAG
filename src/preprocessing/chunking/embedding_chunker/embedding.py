@@ -1,13 +1,14 @@
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 
+from src.embeddings import build_embeddings
+
 
 class ChunkingEmbedder:
-    def __init__(self, embedding_model_name: str = "BAAI/bge-small-en-v1.5"):
-        self.model = HuggingFaceEmbeddings(
-            model_name=embedding_model_name,
-            encode_kwargs={
-                "normalize_embeddings": True
-            },
-        )
+    """Embedding model used by the semantic chunker.
 
+    Defaults come from ``Settings`` (``EMBEDDING_MODEL`` / ``EMBEDDING_DEVICE``).
+    Prefer injecting a shared model instead of building a second copy.
+    """
 
+    def __init__(self, embedding_model_name: str | None = None, device: str | None = None):
+        self.model: HuggingFaceEmbeddings = build_embeddings(embedding_model_name, device)

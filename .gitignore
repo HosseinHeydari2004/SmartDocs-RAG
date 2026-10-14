@@ -1,8 +1,41 @@
+# IDE
 .idea/
+.vscode/
+
+# Python
 venv/
+.venv/
 __pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets (keep the template tracked)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Local data: vector DB, model caches, uploads
+vectordb/
+data/
+.cache/
+hf_cache/
+*.sqlite3
+
+# Archives and logs
 *.zip
 *.rar
+*.log
+
+# Legacy ignores
 test/
-.env
 source/
+
+# OS
+.DS_Store
+Thumbs.db

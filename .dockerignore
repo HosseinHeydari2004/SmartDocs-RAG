@@ -1,0 +1,33 @@
+# VCS / IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.pytest_cache/
+
+# Secrets and local state (never bake into an image)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+vectordb/
+data/
+
+# Not needed at runtime
+tests/
+docs/
+pytest.ini
+requirements-dev.txt
+README.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.zip
+*.rar
+*.log

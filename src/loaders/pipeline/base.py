@@ -26,7 +26,7 @@ class BasePipelineLoader(ABC):
     """
 
     _SUPPORTED_EXTENSIONS: ClassVar[tuple[str, ...]] = (
-        ".md", ".markdown", ".csv", ".pdf", ".doc", ".docx",
+        ".md", ".markdown", ".csv", ".pdf", ".docx", ".txt",
     )
 
     @abstractmethod
@@ -80,8 +80,8 @@ class BasePipelineLoader(ABC):
         """
         return pathlib.Path(path).is_file()
 
-    @property
-    def supported_extensions(self, cls) -> list[str]:
+    @classmethod
+    def supported_extensions(cls) -> tuple[str, ...]:
         """Get the tuple of file extensions supported by this loader.
 
         Returns
@@ -93,7 +93,7 @@ class BasePipelineLoader(ABC):
         """
         return cls._SUPPORTED_EXTENSIONS
 
-    def can_handle(self, cls,path: pathlib.Path | str) -> bool:
+    def can_handle(self, path: pathlib.Path | str) -> bool:
         """Determine whether this loader can handle the given path.
 
         The decision is based on the file extension of ``path`` compared,
@@ -109,7 +109,7 @@ class BasePipelineLoader(ABC):
         bool
             ``True`` if the path's extension is supported, ``False`` otherwise.
         """
-        return pathlib.Path(path).suffix.lower() in cls.supported_extensions()
+        return pathlib.Path(path).suffix.lower() in self.supported_extensions()
 
     def _is_zip(self, path: pathlib.Path | str) -> bool:
         """Check whether the given path has a ``.zip`` extension.
